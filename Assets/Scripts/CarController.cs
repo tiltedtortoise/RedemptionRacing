@@ -57,6 +57,7 @@ public class CarController : MonoBehaviour
     public float MaxForwardSpeed => maxForwardSpeed;
     public bool IsHandbraking => handbrakeInput;
     public bool ControlsLocked { get; private set; }
+    private bool holdBrakesWhileLocked = true;
 
     private void Awake()
     {
@@ -83,7 +84,7 @@ public class CarController : MonoBehaviour
         rb.centerOfMass = centerOfMass;
         rb.maxAngularVelocity = 4f;
         frontLeftCollider.ConfigureVehicleSubsteps(5f, 5, 3);
-        if (ControlsLocked) ApplyControlLock();
+        if (ControlsLocked && holdBrakesWhileLocked) ApplyControlLock();
     }
 
     public void AutoAssignWheelReferences()
@@ -104,14 +105,18 @@ public class CarController : MonoBehaviour
         return child == null ? null : child.GetComponent<WheelCollider>();
     }
 
-    public void SetControlsLocked(bool locked)
+    /// <param name="holdBrakes">True holds the car still (countdown). False only ignores input,
+    /// so the car coasts exactly as if the player released all keys (finish roll-out).</param>
+    public void SetControlsLocked(bool locked, bool holdBrakes = true)
     {
         ControlsLocked = locked;
+        holdBrakesWhileLocked = holdBrakes;
         if (locked)
         {
             throttleInput = 0f;
             steerInput = 0f;
             handbrakeInput = false;
+            if (!holdBrakes) return;
             steeringAngle = 0f;
             ApplyControlLock();
         }
@@ -194,7 +199,7 @@ public class CarController : MonoBehaviour
 
     private void ApplyControls()
     {
-        if (ControlsLocked)
+        if (ControlsLocked && holdBrakesWhileLocked)
         {
             ApplyControlLock();
             return;

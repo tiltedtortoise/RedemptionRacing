@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,11 +19,22 @@ public class RaceHUD : MonoBehaviour
     [SerializeField] private TMP_Text resultsText;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
+    [SerializeField, Min(0f)] private float resultsFadeSeconds = 0.6f;
+
+    [Header("Best Lap Highlight")]
+    [SerializeField] private Color bestLapHighlightColor = new Color(1f, 0.82f, 0.3f);
+    [SerializeField, Min(0f)] private float bestLapHighlightSeconds = 2f;
+
+    private CanvasGroup resultsGroup;
+    private int seenLapCount;
+    private float bestLapHighlightUntil = -1f;
 
     private void Awake()
     {
         restartButton.onClick.AddListener(Restart);
         exitButton.onClick.AddListener(Exit);
+        resultsGroup = resultsRoot.GetComponent<CanvasGroup>();
+        if (resultsGroup == null) resultsGroup = resultsRoot.AddComponent<CanvasGroup>();
         Refresh();
     }
 
@@ -41,13 +53,58 @@ public class RaceHUD : MonoBehaviour
             if (positionText != null) positionText.text = race.Opponent != null && race.Opponent.IsAvailable ? $"P{race.PlayerPosition} / 2" : "";
             lapText.text = $"Lap {race.CurrentLap} / {race.TotalLaps}";
             speedText.text = $"{Mathf.RoundToInt(car.CurrentSpeedKmh)} km/h";
-            timingText.text = $"Lap: {FormatTime(race.CurrentLapTime)}\nTotal: {FormatTime(race.TotalRaceTime)}\nBest: {best}";
+            timingText.text = $"Lap: {FormatTime(race.CurrentLapTime)}\nTotal: {FormatTime(race.TotalRaceTime)}\n{BestLapLine(best)}";
         }
         if (showResults)
         {
-            resultsText.text = $"FINISH\n\nTotal Time: {FormatTime(race.TotalRaceTime)}\nBest Lap: {best}\nLast Lap: {FormatTime(race.LastLapTime)}";
-            if (justFinished) restartButton.Select();
+            if (justFinished)
+            {
+                resultsGroup.alpha = 0f;
+                resultsText.text = BuildResults(best);
+                restartButton.Select();
+            }
+            // Unscaled so the fade also works if time is ever paused on the results screen.
+            resultsGroup.alpha = resultsFadeSeconds <= 0f ? 1f
+                : Mathf.MoveTowards(resultsGroup.alpha, 1f, Time.unscaledDeltaTime / resultsFadeSeconds);
         }
+    }
+
+    /// <summary>Flashes the Best line when a completed lap sets a new best, then fades back to the normal text colour.</summary>
+    private string BestLapLine(string best)
+    {
+        var laps = race.CompletedLapTimes;
+        if (laps.Count > seenLapCount)
+        {
+            seenLapCount = laps.Count;
+            if (laps[laps.Count - 1] == race.BestLapTime)
+                bestLapHighlightUntil = Time.time + bestLapHighlightSeconds;
+        }
+        string line = $"Best: {best}";
+        float remaining = bestLapHighlightUntil - Time.time;
+        if (remaining <= 0f || bestLapHighlightSeconds <= 0f) return line;
+        // Hold the highlight for the first half, then blend back to the normal colour.
+        float blend = Mathf.Clamp01(remaining / (bestLapHighlightSeconds * 0.5f));
+        Color color = Color.Lerp(timingText.color, bestLapHighlightColor, blend);
+        return $"<color=#{ColorUtility.ToHtmlStringRGBA(color)}>{line}</color>";
+    }
+
+    private string BuildResults(string best)
+    {
+        string title = !race.HasOpponent ? "<color=#FFFFFF>FINISH</color>"
+            : race.PlayerWon ? "<color=#4CFF7A>VICTORY</color>" : "<color=#FF5A5A>DEFEAT</color>";
+        var text = new StringBuilder();
+        text.Append($"<size=160%><b>{title}</b></size>\n");
+        text.Append($"Position: P{race.PlayerPosition} / {race.RacerCount}\n");
+        text.Append($"Total Time: {FormatTime(race.TotalRaceTime)}\n");
+        var laps = race.CompletedLapTimes;
+        if (laps.Count == 0) text.Append("<color=#AAAAAA>No completed laps</color>\n");
+        for (int i = 0; i < laps.Count; i++)
+        {
+            string line = $"Lap {i + 1}: {FormatTime(laps[i])}";
+            text.Append(laps[i] == race.BestLapTime ? $"<color=#FFD24C>{line}</color>\n" : line + "\n");
+        }
+        text.Append($"Best Lap: {best}");
+        return text.ToString();
     }
 
     public static string FormatTime(float seconds)
