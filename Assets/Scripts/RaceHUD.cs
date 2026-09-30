@@ -12,6 +12,7 @@ public class RaceHUD : MonoBehaviour
     [SerializeField] private GameObject hudRoot;
     [SerializeField] private GameObject resultsRoot;
     [SerializeField] private TMP_Text lapText;
+    [SerializeField] private TMP_Text positionText;
     [SerializeField] private TMP_Text speedText;
     [SerializeField] private TMP_Text timingText;
     [SerializeField] private TMP_Text resultsText;
@@ -37,6 +38,7 @@ public class RaceHUD : MonoBehaviour
         string best = race.CompletedLapTimes.Count > 0 ? FormatTime(race.BestLapTime) : "--:--.---";
         if (race.IsRacing)
         {
+            if (positionText != null) positionText.text = race.Opponent != null && race.Opponent.IsAvailable ? $"P{race.PlayerPosition} / 2" : "";
             lapText.text = $"Lap {race.CurrentLap} / {race.TotalLaps}";
             speedText.text = $"{Mathf.RoundToInt(car.CurrentSpeedKmh)} km/h";
             timingText.text = $"Lap: {FormatTime(race.CurrentLapTime)}\nTotal: {FormatTime(race.TotalRaceTime)}\nBest: {best}";

@@ -21,6 +21,32 @@ public class RaceManager : MonoBehaviour
     [SerializeField] private TMP_Text countdownText;
     [SerializeField, Min(0f)] private float goDisplaySeconds = 0.75f;
 
+
+    [SerializeField] private ReplayOpponent opponent;
+    public ReplayOpponent Opponent => opponent;
+    public bool IsOpponentFinished => opponent != null && opponent.HasFinished;
+    public IReadOnlyList<Checkpoint> Checkpoints => checkpoints;
+    public Rigidbody PlayerBody => player;
+    public int PlayerPosition
+    {
+        get
+        {
+            if (opponent == null || !opponent.IsAvailable || progress == null) return 1;
+            if (IsFinished && opponent.HasFinished)
+                return TotalRaceTime <= opponent.FinishRaceTime ? 1 : 2;
+            if (CompletedLaps != opponent.CompletedLaps)
+                return CompletedLaps > opponent.CompletedLaps ? 1 : 2;
+            int playerGate = progress.LastValidCheckpointIndex;
+            int ghostGate = opponent.LastCheckpointIndex;
+            if (playerGate != ghostGate) return playerGate > ghostGate ? 1 : 2;
+            int next = NextExpectedCheckpoint;
+            if (next < 0 || next >= checkpoints.Length) return 1;
+            Vector3 target = checkpoints[next].transform.position;
+            return (player.position - target).sqrMagnitude <=
+                (opponent.transform.position - target).sqrMagnitude ? 1 : 2;
+        }
+    }
+
     public event System.Action RaceStarted;
     public event System.Action<int> ValidStartFinishCrossed;
 

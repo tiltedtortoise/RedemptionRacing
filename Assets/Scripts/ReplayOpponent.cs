@@ -16,6 +16,103 @@ public sealed class ReplayOpponent : MonoBehaviour
     private float appliedOpacity = -1f;
     private ReplayLapData playbackSnapshot;
 
+
+    [SerializeField, Range(0.8f, 1.2f)] private float replaySpeedMultiplier = 1f;
+    private RaceProgress progress;
+    private Vector3 probeCenter, probeExtents;
+    private Vector3 loopPositionOffset;
+    private Quaternion loopRotationOffset = Quaternion.identity;
+    private bool looping;
+    private int playbackLap = 1;
+    public bool IsAvailable => ready && isActiveAndEnabled;
+    public int CurrentLap => progress != null ? progress.CurrentLap : 1;
+    public int CompletedLaps => progress != null ? progress.CompletedLaps : 0;
+    public int NextExpectedCheckpoint => progress != null ? progress.NextExpectedCheckpoint : 0;
+    public int LastCheckpointIndex => progress != null ? progress.LastValidCheckpointIndex : -1;
+    public double FinishRaceTime { get; private set; }
+
+    private void AdvancePlayback(float seconds)
+    {
+        float remaining = Mathf.Max(0f, seconds) * Mathf.Clamp(replaySpeedMultiplier, .8f, 1.2f);
+        while (playing && remaining > 0f)
+        {
+            float nextFrameTime = replay.Duration;
+            if (frameIndex < replay.Frames.Count - 1)
+                nextFrameTime = replay.Frames[frameIndex + 1].timestamp;
+            float step = Mathf.Min(remaining, Mathf.Max(0.000001f, nextFrameTime - PlaybackTime));
+            step = Mathf.Min(step, replay.Duration - PlaybackTime);
+            Vector3 previous = transform.position;
+            Quaternion previousRotation = transform.rotation;
+            PlaybackTime += step;
+            remaining -= step;
+            ApplyPose(PlaybackTime);
+            if (looping)
+            {
+                float blend = Mathf.Clamp01((PlaybackTime - replay.LapStartTime) / .25f);
+                transform.position += Vector3.Lerp(loopPositionOffset, Vector3.zero, blend);
+                transform.rotation = Quaternion.Slerp(loopRotationOffset, Quaternion.identity, blend) * transform.rotation;
+            }
+            CheckMovement(previous, previousRotation, transform.position, transform.rotation);
+            if (progress.IsFinished)
+            {
+                HasFinished = true;
+                playing = false;
+                FinishRaceTime = Time.timeAsDouble - startedAt;
+                ApplyPose(replay.Duration);
+                break;
+            }
+            if (PlaybackTime >= replay.Duration)
+            {
+                if (progress.CompletedLaps != playbackLap)
+                {
+                    playing = false;
+                    Debug.LogWarning("Ghost replay did not pass the current ordered checkpoint layout. Record a new ghost for this track.", this);
+                    break;
+                }
+                playbackLap++;
+                looping = true;
+                var start = replay.Frames[replay.LapStartFrameIndex];
+                loopPositionOffset = transform.position - start.worldPosition;
+                loopRotationOffset = transform.rotation * Quaternion.Inverse(start.worldRotation);
+                PlaybackTime = replay.LapStartTime;
+                frameIndex = replay.LapStartFrameIndex;
+                // Hold the finish pose here; the next samples smoothly remove the small loop offset.
+            }
+        }
+    }
+
+    private void CheckMovement(Vector3 from, Quaternion fromRotation, Vector3 to, Quaternion toRotation)
+    {
+        // Only the next expected gate can advance this independent instance of RaceProgress.
+        for (int attempt = 0; attempt < race.Checkpoints.Count && !progress.IsFinished; attempt++)
+        {
+            int index = progress.NextExpectedCheckpoint;
+            var checkpoint = race.Checkpoints[index];
+            var box = checkpoint.GetComponent<BoxCollider>();
+            if (!checkpoint.isActiveAndEnabled || !box.enabled || !box.isTrigger) return;
+            var frame = box.transform;
+            Vector3 a = frame.InverseTransformPoint(from + fromRotation * probeCenter) - box.center;
+            Vector3 b = frame.InverseTransformPoint(to + toRotation * probeCenter) - box.center;
+            Vector3 padding = Vector3.Max(ProjectExtents(frame, fromRotation), ProjectExtents(frame, toRotation));
+            var bounds = new Bounds(Vector3.zero, box.size + padding * 2f);
+            Vector3 delta = b - a;
+            bool hit = bounds.Contains(a) || bounds.Contains(b);
+            if (!hit && delta.sqrMagnitude > .0000001f)
+                hit = bounds.IntersectRay(new Ray(a, delta.normalized), out float distance) && distance <= delta.magnitude;
+            if (!hit || !progress.TryPass(index)) return;
+        }
+    }
+
+    private Vector3 ProjectExtents(Transform frame, Quaternion rotation)
+    {
+        Vector3 x = frame.InverseTransformVector(rotation * Vector3.right * probeExtents.x);
+        Vector3 y = frame.InverseTransformVector(rotation * Vector3.up * probeExtents.y);
+        Vector3 z = frame.InverseTransformVector(rotation * Vector3.forward * probeExtents.z);
+        return new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x)+Mathf.Abs(z.x),
+            Mathf.Abs(x.y)+Mathf.Abs(y.y)+Mathf.Abs(z.y),
+            Mathf.Abs(x.z)+Mathf.Abs(y.z)+Mathf.Abs(z.z));
+    }
+
     private bool ready;
     private bool playing;
     private double startedAt;
@@ -47,6 +144,8 @@ public sealed class ReplayOpponent : MonoBehaviour
                 HideGhost();
                 return;
             }
+        if (replay.LapStartFrameIndex < 0 || replay.LapStartFrameIndex >= replay.Frames.Count - 1 || replay.Duration <= replay.LapStartTime)
+        { ready = false; HideGhost(); return; }
         playbackSnapshot = Instantiate(replay); // Saving a new ghost cannot change this run's playback.
         replay = playbackSnapshot;
         CreateGhostMaterials();
@@ -66,8 +165,13 @@ public sealed class ReplayOpponent : MonoBehaviour
     private void BeginPlayback()
     {
         if (!ready || playing || HasFinished) return;
+        progress = new RaceProgress(race.Checkpoints.Count, race.TotalLaps);
+        var chassis = race.PlayerBody.GetComponent<BoxCollider>();
+        probeCenter = Vector3.Scale(chassis.center, chassis.transform.lossyScale);
+        probeExtents = Vector3.Scale(chassis.size * .5f, chassis.transform.lossyScale);
         startedAt = Time.timeAsDouble;
         playing = true;
+        CheckMovement(transform.position, transform.rotation, transform.position, transform.rotation);
     }
 
     private void LateUpdate()
@@ -75,8 +179,7 @@ public sealed class ReplayOpponent : MonoBehaviour
         if (!Mathf.Approximately(appliedOpacity, ghostOpacity)) ApplyOpacity();
         if (!playing) return;
         Vector3 previousPosition = transform.position;
-        PlaybackTime = Mathf.Min((float)(Time.timeAsDouble - startedAt), replay.Duration);
-        ApplyPose(PlaybackTime);
+        AdvancePlayback(Time.deltaTime);
 
         // Cosmetic rolling only; centered pivots prevent imported wheel meshes from wobbling.
         float distance = Vector3.Distance(previousPosition, transform.position);
@@ -86,11 +189,7 @@ public sealed class ReplayOpponent : MonoBehaviour
             foreach (Transform wheel in visualWheelPivots)
                 if (wheel != null) wheel.Rotate(Vector3.right, angle, Space.Self);
 
-        if (PlaybackTime >= replay.Duration)
-        {
-            playing = false;
-            HasFinished = true;
-        }
+
     }
 
     private void ApplyPose(float time)
