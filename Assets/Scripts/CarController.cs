@@ -15,9 +15,12 @@ public class CarController : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float frontDriveShare = 0.4f;
     [Tooltip("Normal brake torque per wheel, in Nm.")]
     [SerializeField, Min(0f)] private float brakeTorque = 450f;
-    [Tooltip("Coasting brake torque per rear wheel; front wheels free-roll.")]
-    [SerializeField, Min(0f)] private float coastBrakeTorque = 70f;
-    [SerializeField, Min(0f)] private float handbrakeTorque = 900f;
+    [Tooltip("Coasting brake torque per wheel, applied to all four wheels when no throttle is pressed.")]
+    [SerializeField, Min(0f)] private float coastBrakeTorque = 100f;
+    [Tooltip("Rear brake torque per wheel while handbraking. Kept below wheel lock so the rear slides instead of spinning.")]
+    [SerializeField, Min(0f)] private float handbrakeTorque = 375f;
+    [Tooltip("Rear sideways grip multiplier while handbraking.")]
+    [SerializeField, Range(0.1f, 1f)] private float handbrakeRearGrip = 0.78f;
 
     [Header("Steering")]
     [SerializeField, Range(1f, 45f)] private float maxSteerAngle = 38f;
@@ -223,7 +226,7 @@ public class CarController : MonoBehaviour
         }
         else if (throttleInput == 0f)
         {
-            rearBrake = coastBrakeTorque;
+            frontBrake = rearBrake = coastBrakeTorque;
         }
         else if (signedSpeed * Mathf.Sign(throttleInput) < -0.5f)
         {
@@ -245,7 +248,7 @@ public class CarController : MonoBehaviour
             wheels[i].motorTorque = totalDrive * (front ? frontDriveShare : 1f - frontDriveShare) * 0.5f;
             wheels[i].brakeTorque = front ? frontBrake : rearBrake;
             var grip = normalSidewaysFriction[i];
-            if (!front && handbrakeInput) grip.stiffness *= 0.65f;
+            if (!front && handbrakeInput) grip.stiffness *= handbrakeRearGrip;
             wheels[i].sidewaysFriction = grip;
         }
     }
