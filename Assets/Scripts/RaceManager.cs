@@ -21,6 +21,9 @@ public class RaceManager : MonoBehaviour
     [SerializeField] private TMP_Text countdownText;
     [SerializeField, Min(0f)] private float goDisplaySeconds = 0.75f;
 
+    public event System.Action RaceStarted;
+    public event System.Action<int> ValidStartFinishCrossed;
+
     public enum RaceState { Countdown, Racing, Finished }
     public RaceState State { get; private set; } = RaceState.Countdown;
     public bool IsRacing => State == RaceState.Racing;
@@ -115,6 +118,7 @@ public class RaceManager : MonoBehaviour
             goVisibleRemaining = goDisplaySeconds;
             ShowCountdown("GO!");
             playerController.SetControlsLocked(false);
+            RaceStarted?.Invoke();
         }
 
         // Only the part of this frame after GO contributes; countdown is never included.
@@ -172,6 +176,7 @@ public class RaceManager : MonoBehaviour
                 ShowCountdown("");
             }
         }
+        if (index == 0) ValidStartFinishCrossed?.Invoke(progress.CompletedLaps);
         return true;
     }
 
