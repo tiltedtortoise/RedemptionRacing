@@ -11,6 +11,8 @@ public sealed class ReplayOpponent : MonoBehaviour
     [SerializeField, Min(0.01f)] private float visualWheelRadius = 0.28f;
 
     [SerializeField, Range(0f, 1f)] private float ghostOpacity = 0.5f;
+    [Tooltip("Transparent URP/Lit material asset. Referencing it keeps the transparent shader variant in builds.")]
+    [SerializeField] private Material ghostMaterialTemplate;
     private readonly System.Collections.Generic.List<Material> ghostMaterials = new System.Collections.Generic.List<Material>();
     private readonly System.Collections.Generic.Dictionary<Renderer, Material[]> originalMaterials = new System.Collections.Generic.Dictionary<Renderer, Material[]>();
     private float appliedOpacity = -1f;
@@ -223,6 +225,11 @@ public sealed class ReplayOpponent : MonoBehaviour
 
     private void CreateGhostMaterials()
     {
+        if (ghostMaterialTemplate == null)
+        {
+            Debug.LogWarning("ReplayOpponent needs a transparent ghostMaterialTemplate; the ghost stays opaque.", this);
+            return;
+        }
         foreach (var renderer in GetComponentsInChildren<Renderer>(true))
         {
             originalMaterials[renderer] = renderer.sharedMaterials;
@@ -230,22 +237,15 @@ public sealed class ReplayOpponent : MonoBehaviour
             for (int i = 0; i < copies.Length; i++)
             {
                 if (copies[i] == null) continue;
-                var material = new Material(copies[i]) { name = copies[i].name + " (Ghost Instance)" };
-                material.SetFloat("_Surface", 1f);
-                material.SetFloat("_Blend", 0f);
-                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                if (material.HasProperty("_SrcBlendAlpha")) material.SetFloat("_SrcBlendAlpha", 1f);
-                if (material.HasProperty("_DstBlendAlpha")) material.SetFloat("_DstBlendAlpha", 10f);
-                material.SetFloat("_ZWrite", 0f);
-                material.SetFloat("_AlphaClip", 0f);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                material.DisableKeyword("_ALPHATEST_ON");
-                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.DisableKeyword("_ALPHAMODULATE_ON");
-                material.SetShaderPassEnabled("ShadowCaster", false);
-                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                // Start from the transparent template so no shader mode is switched at runtime;
+                // only the original surface look is copied over.
+                var material = new Material(ghostMaterialTemplate) { name = copies[i].name + " (Ghost Instance)" };
+                material.SetColor("_BaseColor", copies[i].GetColor("_BaseColor"));
+                material.SetTexture("_BaseMap", copies[i].GetTexture("_BaseMap"));
+                material.SetTextureScale("_BaseMap", copies[i].GetTextureScale("_BaseMap"));
+                material.SetTextureOffset("_BaseMap", copies[i].GetTextureOffset("_BaseMap"));
+                material.SetFloat("_Smoothness", copies[i].GetFloat("_Smoothness"));
+                material.SetFloat("_Metallic", copies[i].GetFloat("_Metallic"));
                 copies[i] = material;
                 ghostMaterials.Add(material);
             }

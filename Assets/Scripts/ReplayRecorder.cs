@@ -34,10 +34,17 @@ public sealed class ReplayRecorder : MonoBehaviour
 
     private void OnEnable()
     {
+#if UNITY_EDITOR
         if (race == null || player == null) return;
         race.RaceStarted += BeginRecording;
         race.ValidStartFinishCrossed += OnStartFinish;
         RefreshStatus();
+#else
+        // Saving a ghost needs the AssetDatabase, so builds only play back the included ghost:
+        // no G prompt, no recording, no status messages.
+        if (ghostStatusText != null) ghostStatusText.enabled = false;
+        enabled = false;
+#endif
     }
 
     private void OnDisable()
