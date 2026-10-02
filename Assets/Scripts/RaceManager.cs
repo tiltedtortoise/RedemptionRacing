@@ -22,7 +22,18 @@ public class RaceManager : MonoBehaviour
     [SerializeField, Min(0f)] private float goDisplaySeconds = 0.75f;
     [Tooltip("Fade-in and fade-out time of each countdown value. Visual only; timing is unchanged.")]
     [SerializeField, Min(0f)] private float countdownFadeSeconds = 0.2f;
+    [Tooltip("\"GET READY\" is shown this long before 3. Controls stay locked and the race timer waits for GO.")]
+    [SerializeField, Min(0f)] private float getReadySeconds = 0.9f;
+    private const string GetReadyText = "<size=75%>GET READY</size>";
+    private float getReadyRemaining;
     private CanvasGroup countdownGroup;
+
+    [Header("Countdown Sounds (optional)")]
+    [Tooltip("2D AudioSource used only for countdown/UI sounds.")]
+    [SerializeField] private AudioSource countdownAudio;
+    [SerializeField] private AudioClip countdownBeep;
+    [SerializeField] private AudioClip goBeep;
+    private int lastBeepDigit;
 
 
     [SerializeField] private ReplayOpponent opponent;
@@ -111,7 +122,9 @@ public class RaceManager : MonoBehaviour
         completedLapTimes.Clear();
         TotalRaceTime = CurrentLapTime = LastLapTime = BestLapTime = 0f;
         PlayerWon = false;
+        getReadyRemaining = getReadySeconds;
         countdownRemaining = 3f;
+        lastBeepDigit = 0;
         goVisibleRemaining = 0f;
         State = RaceState.Countdown;
         playerController.SetControlsLocked(true);
@@ -120,7 +133,7 @@ public class RaceManager : MonoBehaviour
             countdownGroup = countdownText.GetComponent<CanvasGroup>();
             if (countdownGroup == null) countdownGroup = countdownText.gameObject.AddComponent<CanvasGroup>();
         }
-        ShowCountdown("3", 0f);
+        ShowCountdown(getReadyRemaining > 0f ? GetReadyText : "3", 0f);
         return true;
     }
 
@@ -146,6 +159,19 @@ public class RaceManager : MonoBehaviour
 
         if (State == RaceState.Countdown)
         {
+            // Silent GET READY phase first; any leftover frame time flows into the 3-2-1 countdown.
+            if (getReadyRemaining > 0f)
+            {
+                float readyStep = Mathf.Min(deltaTime, getReadyRemaining);
+                getReadyRemaining -= readyStep;
+                deltaTime -= readyStep;
+                if (getReadyRemaining > 0f)
+                {
+                    ShowCountdown(GetReadyText, FadeAlpha(getReadySeconds - getReadyRemaining, getReadySeconds));
+                    return;
+                }
+            }
+
             float countdownStep = Mathf.Min(deltaTime, countdownRemaining);
             countdownRemaining -= countdownStep;
             deltaTime -= countdownStep;
@@ -155,12 +181,18 @@ public class RaceManager : MonoBehaviour
                 // Each digit is shown for one second; fade by how far into that second we are.
                 float elapsedInDigit = digit - countdownRemaining;
                 ShowCountdown(digit.ToString(), FadeAlpha(elapsedInDigit, 1f));
+                if (digit != lastBeepDigit)
+                {
+                    lastBeepDigit = digit;
+                    PlayCountdownSound(countdownBeep);
+                }
                 return;
             }
 
             State = RaceState.Racing;
             goVisibleRemaining = goDisplaySeconds;
             ShowCountdown("GO!", 0f);
+            PlayCountdownSound(goBeep);
             playerController.SetControlsLocked(false);
             RaceStarted?.Invoke();
         }
@@ -189,6 +221,11 @@ public class RaceManager : MonoBehaviour
         countdownText.text = message;
         countdownText.enabled = message.Length > 0;
         if (countdownGroup != null) countdownGroup.alpha = alpha;
+    }
+
+    private void PlayCountdownSound(AudioClip clip)
+    {
+        if (countdownAudio != null && clip != null) countdownAudio.PlayOneShot(clip);
     }
 
     /// <summary>0 → 1 over the first fade time, 1 → 0 over the last fade time of a display window.</summary>
