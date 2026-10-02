@@ -62,6 +62,9 @@ public class RaceManager : MonoBehaviour
 
     public event System.Action RaceStarted;
     public event System.Action<int> ValidStartFinishCrossed;
+    /// <summary>Every valid player checkpoint pass: (pass ordinal, race time). Ordinal 0 is the first start-line crossing.</summary>
+    public event System.Action<int, float> CheckpointPassed;
+    private int validPassCount;
 
     public enum RaceState { Countdown, Racing, Finished }
     public RaceState State { get; private set; } = RaceState.Countdown;
@@ -122,6 +125,7 @@ public class RaceManager : MonoBehaviour
         completedLapTimes.Clear();
         TotalRaceTime = CurrentLapTime = LastLapTime = BestLapTime = 0f;
         PlayerWon = false;
+        validPassCount = 0;
         getReadyRemaining = getReadySeconds;
         countdownRemaining = 3f;
         lastBeepDigit = 0;
@@ -262,6 +266,7 @@ public class RaceManager : MonoBehaviour
             CurrentLapTime = 0f;
             if (progress.IsFinished) EndRace(!IsOpponentFinished);
         }
+        CheckpointPassed?.Invoke(validPassCount++, TotalRaceTime);
         if (index == 0) ValidStartFinishCrossed?.Invoke(progress.CompletedLaps);
         return true;
     }

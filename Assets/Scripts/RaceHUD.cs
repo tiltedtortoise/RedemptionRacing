@@ -25,9 +25,17 @@ public class RaceHUD : MonoBehaviour
     [SerializeField] private Color bestLapHighlightColor = new Color(1f, 0.82f, 0.3f);
     [SerializeField, Min(0f)] private float bestLapHighlightSeconds = 2f;
 
+    [Header("Ghost Split (optional)")]
+    [SerializeField] private TMP_Text splitText;
+    [SerializeField, Min(0f)] private float splitHoldSeconds = 1.4f;
+    [SerializeField, Min(0.01f)] private float splitFadeSeconds = 0.4f;
+    [SerializeField] private Color splitAheadColor = new Color(0.3f, 1f, 0.48f);
+    [SerializeField] private Color splitBehindColor = new Color(1f, 0.35f, 0.35f);
+
     private CanvasGroup resultsGroup;
     private int seenLapCount;
     private float bestLapHighlightUntil = -1f;
+    private float splitShownAt = float.NegativeInfinity;
 
     private void Awake()
     {
@@ -35,10 +43,37 @@ public class RaceHUD : MonoBehaviour
         exitButton.onClick.AddListener(Exit);
         resultsGroup = resultsRoot.GetComponent<CanvasGroup>();
         if (resultsGroup == null) resultsGroup = resultsRoot.AddComponent<CanvasGroup>();
+        if (splitText != null) splitText.enabled = false;
         Refresh();
     }
 
-    private void Update() => Refresh();
+    private void OnEnable() { if (race != null) race.CheckpointPassed += ShowSplit; }
+    private void OnDisable() { if (race != null) race.CheckpointPassed -= ShowSplit; }
+
+    private void Update()
+    {
+        Refresh();
+        if (splitText != null && splitText.enabled)
+        {
+            float alpha = 1f - (Time.time - splitShownAt - splitHoldSeconds) / splitFadeSeconds;
+            splitText.alpha = Mathf.Clamp01(alpha);
+            if (alpha <= 0f) splitText.enabled = false;
+        }
+    }
+
+    /// <summary>Player time minus the ghost's recorded time at the same pass (same checkpoint, same lap).</summary>
+    private void ShowSplit(int passOrdinal, float playerRaceTime)
+    {
+        if (splitText == null || passOrdinal == 0) return; // Pass 0 is just leaving the grid.
+        var ghost = race.Opponent;
+        if (ghost == null || !ghost.IsAvailable || !ghost.TryGetSplitReference(passOrdinal, out float ghostRaceTime)) return;
+        float delta = playerRaceTime - ghostRaceTime;
+        splitText.text = (delta < 0f ? "-" : "+") + Mathf.Abs(delta).ToString("0.000", CultureInfo.InvariantCulture);
+        splitText.color = delta < 0f ? splitAheadColor : splitBehindColor;
+        splitText.alpha = 1f;
+        splitText.enabled = true;
+        splitShownAt = Time.time;
+    }
 
     public void Refresh()
     {

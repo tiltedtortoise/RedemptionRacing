@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEditor;
 #endif
 
-/// <summary>Opt-in grid-to-finish recording; never changes race state or vehicle physics.</summary>
+/// <summary>Opt-in recording of the whole race (GO on the grid to the final finish crossing); never changes race state or vehicle physics.</summary>
 [DisallowMultipleComponent]
 public sealed class ReplayRecorder : MonoBehaviour
 {
@@ -75,6 +75,9 @@ public sealed class ReplayRecorder : MonoBehaviour
             (state != RecordingState.Waiting && state != RecordingState.Armed)) return;
         state = IsArmed ? RecordingState.Waiting : RecordingState.Armed;
         Debug.Log(IsArmed ? "Replay recorder armed" : "Replay recording cancelled", this);
+        // A recording run races without the current ghost, so it can never end the race before
+        // the full recording is saved. Cancelling during the countdown brings it back.
+        if (race.Opponent != null) race.Opponent.gameObject.SetActive(!IsArmed);
         RefreshStatus();
     }
 
@@ -102,7 +105,11 @@ public sealed class ReplayRecorder : MonoBehaviour
             lapStartTime = timestamp;
             lapStartFrameIndex = frames.Count - 1;
         }
-        else if (completedLaps == 1 && lapStartFrameIndex >= 0)
+        else if (completedLaps > 0 && completedLaps < race.TotalLaps)
+        {
+            Capture(timestamp); // Keep the exact intermediate finish-line crossing; recording continues.
+        }
+        else if (completedLaps == race.TotalLaps && lapStartFrameIndex >= 0)
         {
             Capture(timestamp);
             state = RecordingState.Completed;

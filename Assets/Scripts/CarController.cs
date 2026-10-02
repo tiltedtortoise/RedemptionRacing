@@ -27,7 +27,12 @@ public class CarController : MonoBehaviour
     [Tooltip("Speed-dependent steering budget in m/s². Keeps large steering angles from scrubbing at speed.")]
     [SerializeField, Min(1f)] private float corneringAcceleration = 24f;
     [SerializeField, Min(1f)] private float steeringResponse = 500f;
-
+    [Tooltip("Steering limit multiplier while the player steers into an existing slide (countersteer).")]
+    [SerializeField, Range(1f, 2f)] private float countersteerBoost = 1.25f;
+    [Tooltip("Sideways slip angle, in degrees, above which countersteer assist can apply. Normal cornering stays below it.")]
+    [SerializeField, Range(1f, 45f)] private float countersteerSlipAngle = 10f;
+    [Tooltip("While countersteering, the front wheels may also turn up to this fraction of the slip angle. 0 = off; 0.5 is the tested value.")]
+    [SerializeField, Range(0f, 1f)] private float countersteerSlipFollow = 0.5f;
     [Header("Input and Stability")]
     [SerializeField, Range(0f, 0.9f)] private float gamepadDeadzone = 0.2f;
     [Tooltip("Explicit center of mass in PlayerCar local meters, independent of previous runtime offsets.")]
@@ -214,7 +219,19 @@ public class CarController : MonoBehaviour
         // front-wheel angles at racing speed. Throttle never enters this calculation.
         float speedAngle = Mathf.Atan(wheelbase * corneringAcceleration /
             Mathf.Max(0.01f, speedSquared)) * Mathf.Rad2Deg;
-        float targetAngle = steerInput * Mathf.Min(maxSteerAngle, speedAngle);
+        float steerLimit = Mathf.Min(maxSteerAngle, speedAngle);
+
+        // Countersteer assist: only when the car is clearly sliding and the player steers toward
+        // the direction of travel. It never steers by itself; it just allows a slightly larger angle.
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, transform.up);
+        if (planarVelocity.sqrMagnitude > 25f && steerInput != 0f)
+        {
+            float slipAngle = Vector3.SignedAngle(transform.forward, planarVelocity, transform.up);
+            if (Mathf.Abs(slipAngle) > countersteerSlipAngle && Mathf.Sign(steerInput) == Mathf.Sign(slipAngle))
+                steerLimit = Mathf.Min(maxSteerAngle,
+                    Mathf.Max(steerLimit * countersteerBoost, Mathf.Abs(slipAngle) * countersteerSlipFollow));
+        }
+        float targetAngle = steerInput * steerLimit;
         steeringAngle = Mathf.MoveTowards(steeringAngle, targetAngle, steeringResponse * Time.fixedDeltaTime);
 
         float totalDrive = 0f;
