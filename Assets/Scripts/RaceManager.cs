@@ -143,6 +143,7 @@ public class RaceManager : MonoBehaviour
 
     private void Update()
     {
+        if (PauseMenu.IsPaused) return; // Frozen by timeScale anyway; this also blocks R resets while paused.
         AdvanceRaceClock(Time.deltaTime);
         // The ghost finishes during its own playback; the first one across the line ends the race.
         if (IsRacing && IsOpponentFinished) EndRace(false);
