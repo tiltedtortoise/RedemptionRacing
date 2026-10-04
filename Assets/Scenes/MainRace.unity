@@ -19852,19 +19852,19 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 2066297273}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -9.155703
+      value: -17.564919
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -7.230456e-10
+      value: 4.75
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.23996231
+      value: -43.287052
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalRotation.w
@@ -19872,7 +19872,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
       propertyPath: m_LocalRotation.y
@@ -21620,11 +21620,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 18066957}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 52, y: 215}
-  m_SizeDelta: {x: 300, y: 55}
-  m_Pivot: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 80}
+  m_SizeDelta: {x: 400, y: 60}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1338264210
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21679,7 +21679,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -27711,6 +27711,11 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -6722734888106741127, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
+--- !u!4 &1681724048 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 65b4af80af16c7a4f86edbbe6782e407, type: 3}
+  m_PrefabInstance: {fileID: 1204618761}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1684478442
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -34219,6 +34224,7 @@ Transform:
   - {fileID: 2088809960}
   - {fileID: 1567186093}
   - {fileID: 791711808}
+  - {fileID: 1681724048}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2066850306
@@ -34235,6 +34241,7 @@ GameObject:
   - component: {fileID: 2066850308}
   - component: {fileID: 2066850312}
   - component: {fileID: 2066850311}
+  - component: {fileID: 2066850313}
   m_Layer: 0
   m_Name: PlayerCar
   m_TagString: Untagged
@@ -34460,6 +34467,29 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &2066850313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066850306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80244e434a9e2c54e8f9888a7b132476, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkidMarks
+  car: {fileID: 2066850308}
+  body: {fileID: 2066850310}
+  rearWheels:
+  - {fileID: 129591297}
+  - {fileID: 1440118127}
+  markMaterial: {fileID: 2100000, guid: 58c09e8c31960a64d98918c73131b4fd, type: 2}
+  sidewaysSlipThreshold: 0.3
+  handbrakeMinSpeed: 3
+  markWidth: 0.22
+  markLifetime: 7
+  surfaceOffset: 0.02
 --- !u!1 &2080465906 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 01afa6595c4a3ed4ba4512d16401c348, type: 3}
@@ -35845,4 +35875,3 @@ SceneRoots:
   - {fileID: 1029919642}
   - {fileID: 733207986}
   - {fileID: 638282421}
-  - {fileID: 1204618761}
