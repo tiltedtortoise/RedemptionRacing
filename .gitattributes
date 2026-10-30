@@ -70,102 +70,126 @@
 Assets/Plugins/**           linguist-generated
 Packages/packages-lock.json linguist-generated
 
+# Git LFS is intentionally DISABLED for this project.
+# All binary assets together are only ~18 MB (largest file ~1.6 MB), far below GitHub's
+# 100 MB per-file limit. With LFS, GitHub's "Download ZIP" and clones without git-lfs
+# contained only LFS pointer files, so all models/textures/audio appeared missing.
+# Keeping them as normal Git files makes every clone and ZIP download complete.
+
+# Binary assets: store byte-for-byte (no line-ending conversion; ASCII FBX would otherwise be altered)
+*.fbx                   binary
+*.FBX                   binary
+*.obj                   binary
+*.blend                 binary
+*.png                   binary
+*.jpg                   binary
+*.jpeg                  binary
+*.tga                   binary
+*.psd                   binary
+*.hdr                   binary
+*.exr                   binary
+*.wav                   binary
+*.ogg                   binary
+*.mp3                   binary
+*.ttf                   binary
+*.otf                   binary
+
 # Unity LFS
-*.cubemap               lfs
-*.unitypackage          lfs
+# *.cubemap               lfs
+# *.unitypackage          lfs
 
 # 3D models
-*.3dm                   lfs
-*.3ds                   lfs
-*.blend                 lfs
-*.blend1                lfs
-*.c4d                   lfs
-*.collada               lfs
-*.dae                   lfs
-*.dxf                   lfs
-*.FBX                   lfs
-*.fbx                   lfs
-*.jas                   lfs
-*.lws                   lfs
-*.lxo                   lfs
-*.ma                    lfs
-*.max                   lfs
-*.mb                    lfs
-*.obj                   lfs
-*.ply                   lfs
-*.skp                   lfs
-*.stl                   lfs
-*.ztl                   lfs
+# *.3dm                   lfs
+# *.3ds                   lfs
+# *.blend                 lfs
+# *.blend1                lfs
+# *.c4d                   lfs
+# *.collada               lfs
+# *.dae                   lfs
+# *.dxf                   lfs
+# *.FBX                   lfs
+# *.fbx                   lfs
+# *.jas                   lfs
+# *.lws                   lfs
+# *.lxo                   lfs
+# *.ma                    lfs
+# *.max                   lfs
+# *.mb                    lfs
+# *.obj                   lfs
+# *.ply                   lfs
+# *.skp                   lfs
+# *.stl                   lfs
+# *.ztl                   lfs
 
 # Audio
-*.aif                   lfs
-*.aiff                  lfs
-*.it                    lfs
-*.mod                   lfs
-*.mp3                   lfs
-*.ogg                   lfs
-*.s3m                   lfs
-*.wav                   lfs
-*.xm                    lfs
+# *.aif                   lfs
+# *.aiff                  lfs
+# *.it                    lfs
+# *.mod                   lfs
+# *.mp3                   lfs
+# *.ogg                   lfs
+# *.s3m                   lfs
+# *.wav                   lfs
+# *.xm                    lfs
 
 # Video
-*.asf                   lfs
-*.avi                   lfs
-*.flv                   lfs
-*.mov                   lfs
-*.mp4                   lfs
-*.mpeg                  lfs
-*.mpg                   lfs
-*.ogv                   lfs
-*.wmv                   lfs
+# *.asf                   lfs
+# *.avi                   lfs
+# *.flv                   lfs
+# *.mov                   lfs
+# *.mp4                   lfs
+# *.mpeg                  lfs
+# *.mpg                   lfs
+# *.ogv                   lfs
+# *.wmv                   lfs
 
 # Images
-*.bmp                   lfs
-*.exr                   lfs
-*.gif                   lfs
-*.hdr                   lfs
-*.iff                   lfs
-*.jpeg                  lfs
-*.jpg                   lfs
-*.pict                  lfs
-*.png                   lfs
-*.psd                   lfs
-*.tga                   lfs
-*.tif                   lfs
-*.tiff                  lfs
-*.webp                  lfs
+# *.bmp                   lfs
+# *.exr                   lfs
+# *.gif                   lfs
+# *.hdr                   lfs
+# *.iff                   lfs
+# *.jpeg                  lfs
+# *.jpg                   lfs
+# *.pict                  lfs
+# *.png                   lfs
+# *.psd                   lfs
+# *.tga                   lfs
+# *.tif                   lfs
+# *.tiff                  lfs
+# *.webp                  lfs
 
 # Compressed Archive
-*.7z                    lfs
-*.bz2                   lfs
-*.gz                    lfs
-*.rar                   lfs
-*.tar                   lfs
-*.zip                   lfs
+# *.7z                    lfs
+# *.bz2                   lfs
+# *.gz                    lfs
+# *.rar                   lfs
+# *.tar                   lfs
+# *.zip                   lfs
 
 # Compiled Dynamic Library
-*.dll                   lfs
-*.pdb                   lfs
-*.so                    lfs
+# *.dll                   lfs
+# *.pdb                   lfs
+# *.so                    lfs
 
 # Fonts
-*.otf                   lfs
-*.ttf                   lfs
+# *.otf                   lfs
+# *.ttf                   lfs
 
 # Executable/Installer
-*.apk                   lfs
-*.exe                   lfs
+# *.apk                   lfs
+# *.exe                   lfs
 
 # Documents
-*.pdf                   lfs
+# *.pdf                   lfs
 
 # ETC
-*.a                     lfs
-*.reason                lfs
-*.rns                   lfs
+# *.a                     lfs
+# *.reason                lfs
+# *.rns                   lfs
 
 # Spine export file for Unity
-*.skel.bytes            lfs
+# *.skel.bytes            lfs
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
